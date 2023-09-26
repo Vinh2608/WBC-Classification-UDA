@@ -45,7 +45,7 @@ from pdb import set_trace as trace
 
 from shutil import copyfile
 import imageio
-
+from PIL import Image
 import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import batch_norm
 
@@ -430,8 +430,11 @@ class vaegan(object):
         main_directory = 'WBC-Classification-UDA/Main Dataset/'
         for dirs in os.listdir(main_directory):
             for files in os.listdir(main_directory + dirs)[0:0.7*len(os.listdir(main_directory + dirs))]:
-                y_train.append(int(dirs))
-                x_train1.append(np.array(PIL.Image.open(main_directory +dirs+'/'+files)))
+                if files != "Thumbs.db":
+                    y_train.append(int(dirs))
+                    img = Image.open(main_directory + dirs + '/' + files)
+                    img_resized = img.resize((128, 128))
+                    x_train1.append(np.array(img_resized))
         
         #x_train1 =np.asarray(x_train1)/255.0
         
@@ -474,8 +477,11 @@ class vaegan(object):
         
         for dirs in os.listdir(main_directory):
             for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
-                y_test_cam3.append(int(dirs))
-                x_test1_cam3.append(np.array(PIL.Image.open(main_directory + dirs+'/'+files)))
+                if files != "Thumbs.db":
+                    y_test_cam3.append(int(dirs))
+                    img = Image.open(main_directory + dirs + '/' + files)
+                    img_resized = img.resize((128, 128))
+                    x_test1_cam3.append(np.array(img_resized))
          
         cam3_test_data=[]
         cam3_test_label=[]
@@ -502,7 +508,9 @@ class vaegan(object):
         for dirs in os.listdir(main_directory):
             for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
                 y_test.append(int(dirs))
-                x_test1.append(np.array(PIL.Image.open(main_directory + dirs+'/'+files)))
+                img = Image.open(main_directory + dirs + '/' + files)
+                img_resized = img.resize((128, 128))
+                x_test1.append(np.array(img_resized))
                 
 #         x_test1 = np.load('/home/vinay/projects/Sigtuple/CreateData/cam2_images.npy').astype('float32')/255
 #         y_test = np.load('/home/vinay/projects/Sigtuple/CreateData/cam2_labels.npy')
@@ -919,10 +927,10 @@ flags.DEFINE_integer("op", 0, "Training or Test")
 FLAGS = flags.FLAGS
 FLAGS.op = 0
 if (1):
-    path123 = '.'
-    root_log_dir = path123 + "/log_dir"
-    vaegan_checkpoint_dir =  "/home/manu_kohli/vae_classifier_weights/VAE/itr_model_1/model.cpkt-5400"
-    sample_path =  path123 + "/sample"
+    path123 = './'
+    root_log_dir = path123 + "WBC-Classification-UDA/log"
+    vaegan_checkpoint_dir =  "WBC-Classification-UDA\checkpoint"
+    sample_path =  path123 + "  sample"
 
 
     model_path = vaegan_checkpoint_dir
