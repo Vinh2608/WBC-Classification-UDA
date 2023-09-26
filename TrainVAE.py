@@ -101,8 +101,6 @@ def del_all_flags(FLAGS):
 
 
 
-
-
 def lrelu(x , alpha = 0.2 , name="LeakyReLU"):
     return tf.maximum(x , alpha*x)
 
@@ -390,9 +388,6 @@ class ModelAllConvolutional1(NoRefModel):
 
 
 
-
-
-
 class vaegan(object):
 
     #build model
@@ -432,10 +427,11 @@ class vaegan(object):
         
         y_train=[]
         x_train1=[]
-        for dirs in os.listdir('/home/manu_kohli/wbc/cam3/trainset/'):
-            for files in os.listdir('/home/manu_kohli/wbc/cam3/trainset/'+dirs):
+        main_directory = 'WBC-Classification-UDA/Main Dataset/'
+        for dirs in os.listdir(main_directory):
+            for files in os.listdir(main_directory + dirs)[0:0.7*len(os.listdir(main_directory + dirs))]:
                 y_train.append(int(dirs))
-                x_train1.append(np.array(PIL.Image.open('/home/manu_kohli/wbc/cam3/trainset/'+dirs+'/'+files)))
+                x_train1.append(np.array(PIL.Image.open(main_directory +dirs+'/'+files)))
         
         #x_train1 =np.asarray(x_train1)/255.0
         
@@ -456,7 +452,7 @@ class vaegan(object):
         x_train1 =x_train1 - 1.
         y_train = np.asarray(y_train)
         #y_train = toOneHot(y_train)
-        y_train= to_categorical(y_train, num_classes=11)
+        y_train= to_categorical(y_train, num_classes=6)
 #         x_train1 = np.load( '/home/vinay/projects/Sigtuple/CreateData/DataAugmentation/X_Train.npy').astype('float32')
 #         y_train = np.load( '/home/vinay/projects/Sigtuple/CreateData/DataAugmentation/Y_Train.npy')
 #         x_train1_1 = np.load('/home/vinay/projects/Sigtuple/CreateData/DataAugmentation/X_Test.npy').astype('float32')
@@ -476,10 +472,10 @@ class vaegan(object):
         x_test1_cam3 = []
         y_test_cam3 = []
         
-        for dirs in os.listdir('/home/manu_kohli/wbc/cam3/testset/'):
-            for files in os.listdir('/home/manu_kohli/wbc/cam3/testset/'+dirs):
+        for dirs in os.listdir(main_directory):
+            for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
                 y_test_cam3.append(int(dirs))
-                x_test1_cam3.append(np.array(PIL.Image.open('/home/manu_kohli/wbc/cam3/testset/'+dirs+'/'+files)))
+                x_test1_cam3.append(np.array(PIL.Image.open(main_directory + dirs+'/'+files)))
          
         cam3_test_data=[]
         cam3_test_label=[]
@@ -494,7 +490,7 @@ class vaegan(object):
         x_test1_cam3 = cam3_test_data
         y_test_cam3 = cam3_test_label
          
-        y_test_cam3= to_categorical(y_test_cam3, num_classes=11) 
+        y_test_cam3= to_categorical(y_test_cam3, num_classes=6) 
         #y_test_cam3 = toOneHot(np.asarray(y_test_cam3))
         #x_test1_cam3=np.asarray(x_test1_cam3)/255.0
         x_test1_cam3 = np.asarray(x_test1_cam3)/127.5
@@ -503,10 +499,10 @@ class vaegan(object):
         x_test1=[]
         y_test =[]
         
-        for dirs in os.listdir('/home/manu_kohli/wbc/cam2/combine_train_test_cam2/'):
-            for files in os.listdir('/home/manu_kohli/wbc/cam2/combine_train_test_cam2/'+dirs):
+        for dirs in os.listdir(main_directory):
+            for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
                 y_test.append(int(dirs))
-                x_test1.append(np.array(PIL.Image.open('/home/manu_kohli/wbc/cam2/combine_train_test_cam2/'+dirs+'/'+files)))
+                x_test1.append(np.array(PIL.Image.open(main_directory + dirs+'/'+files)))
                 
 #         x_test1 = np.load('/home/vinay/projects/Sigtuple/CreateData/cam2_images.npy').astype('float32')/255
 #         y_test = np.load('/home/vinay/projects/Sigtuple/CreateData/cam2_labels.npy')
@@ -699,7 +695,7 @@ class vaegan(object):
         with tf.Session(config=config) as sess:
 
             #changed restoring of weights. 
-            ckpt = tf.train.get_checkpoint_state('/home/manu_kohli/vae_classifier_weights/Classifier/checkpoint')
+            ckpt = tf.train.get_checkpoint_state('WBC-Classification-UDA/checkpoint')
             ckpt_path = ckpt.model_checkpoint_path
             sess.run(init)
             self.saver.restore(sess , self.saved_model_path)
@@ -795,8 +791,8 @@ class vaegan(object):
                     accs,l_acc = getAcc(Preddiction, self.Y_test_cam3)
                     print('Full  Filtered Real Test  Example  Acc = ',accs,l_acc)
                     if(l_acc>g_acc):
-                        print('model saved: ', '/home/manu_kohli/vae_classifier_weights/VAE/itr_model_2/model.cpkt')
-                        self.saver.save(sess , '/home/manu_kohli/vae_classifier_weights/VAE/itr_model_2/model.cpkt', global_step=step)
+                        print('model saved: ', 'WBC-Classification-UDA/models/model.ckpt')
+                        self.saver.save(sess , 'WBC-Classification-UDA/models/model.cpkt', global_step=step)
                         g_acc= l_acc
 
                     Preddiction = np.zeros([self.TrainDataSize,11])
