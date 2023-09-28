@@ -80,15 +80,14 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 
-
 classes = ['nrbc', 'notawbc', 'giant platelet', 'platelet clump', 'basophil',
                         'neutrophil', 'eosinophil', 'lymphocyte', 'monocyte', 'ig', 'atypical-blast']
 #os.environ["CUDA_VISIBLE_DEVICES"]="0"
 #os.environ["TF_CPP_MIN_LOG_LEVEL"]="2"
 def toOneHot(a):
-        b = np.zeros((a.shape[0], 11))
+        b = np.zeros((a.shape[0], 6))
         for i in range(a.shape[0]):
-                for j in range(11):
+                for j in range(6):
                         if a[i] == classes[j]:
                                 b[i][j] = 1
         return b
@@ -291,14 +290,14 @@ g_scale_factor =  1 - 0.75/2
 import csv
 
 def getAcc(pred, next_y_images):
-    acc = np.zeros([11])
-    Tc = np.ones([11])
+    acc = np.zeros([6])
+    Tc = np.ones([6])
     for i in range(len(pred)):
         Tc[np.argmax(next_y_images[i])] = Tc[np.argmax(next_y_images[i])] + 1
         if (np.argmax(next_y_images[i]) == np.argmax(pred[i])):
             acc[np.argmax(next_y_images[i])] = acc[np.argmax(next_y_images[i])] + 1
-    print(100*np.sum(acc)/(np.sum(Tc)-11))
-    return 100*acc/Tc,100*np.sum(acc)/(np.sum(Tc)-11)
+    print(100*np.sum(acc)/(np.sum(Tc)-6))
+    return 100*acc/Tc,100*np.sum(acc)/(np.sum(Tc)-6)
 class ModelAllConvolutional(NoRefModel):
   """
   A simple model that uses only convolution and downsampling---no batch norm or other techniques that can complicate
@@ -413,7 +412,7 @@ class vaegan(object):
 
 
 
-        self.labels = tf.placeholder(tf.float32, [self.batch_size, 11])
+        self.labels = tf.placeholder(tf.float32, [self.batch_size, 6])
 
 
         self.ep1 = tf.random_normal(shape=[self.batch_size, self.latent_dim])
@@ -429,7 +428,11 @@ class vaegan(object):
         x_train1=[]
         main_directory = 'WBC-Classification-UDA/Main Dataset/'
         for dirs in os.listdir(main_directory):
-            for files in os.listdir(main_directory + dirs)[0:0.7*len(os.listdir(main_directory + dirs))]:
+            if (dirs == '.ipynb_checkpoints'):
+              continue
+            if (dirs == 'Thumbs.db'):
+              continue
+            for files in os.listdir(main_directory + dirs)[0:int(0.7*len(os.listdir(main_directory + dirs)))]:
                 if files != "Thumbs.db":
                     y_train.append(int(dirs))
                     img = Image.open(main_directory + dirs + '/' + files)
@@ -476,7 +479,11 @@ class vaegan(object):
         y_test_cam3 = []
         
         for dirs in os.listdir(main_directory):
-            for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
+            if (dirs == '.ipynb_checkpoints'):
+              continue
+            if (dirs == 'Thumbs.db'):
+              continue
+            for files in os.listdir(main_directory + dirs)[int(0.7*len(os.listdir(main_directory + dirs))):-1]:
                 if files != "Thumbs.db":
                     y_test_cam3.append(int(dirs))
                     img = Image.open(main_directory + dirs + '/' + files)
@@ -506,7 +513,11 @@ class vaegan(object):
         y_test =[]
         
         for dirs in os.listdir(main_directory):
-            for files in os.listdir(main_directory + dirs)[0.7*len(os.listdir(main_directory + dirs)):-1]:
+            if (dirs == '.ipynb_checkpoints'):
+              continue
+            if (dirs == 'Thumbs.db'):
+              continue
+            for files in os.listdir(main_directory + dirs)[int(0.7*len(os.listdir(main_directory + dirs))):-1]:
                 y_test.append(int(dirs))
                 img = Image.open(main_directory + dirs + '/' + files)
                 img_resized = img.resize((128, 128))
@@ -528,7 +539,7 @@ class vaegan(object):
         x_test1 = cam2_data
         y_test = cam2_label
         
-        y_test= to_categorical(y_test, num_classes=11)
+        y_test= to_categorical(y_test, num_classes=6)
         #y_test = toOneHot(np.asarray(y_test))
        # x_test1=np.asarray(x_test1)/255.0
         x_test1 = np.asarray(x_test1)/127.5
@@ -605,8 +616,8 @@ class vaegan(object):
 
         self.x_filt2 = self.generate1(self.x_input_sobel, self.z1_mean, reuse=True)
 
-        self.model_classifier_logits = ModelAllConvolutional('model1', 11, 64, input_shape=[self.output_size,self.output_size,self.channel])
-        self.model_classifier_percept = ModelAllConvolutional1('model2', 11, 64, input_shape=[self.output_size,self.output_size,self.channel])
+        self.model_classifier_logits = ModelAllConvolutional('model1', 6, 64, input_shape=[self.output_size,self.output_size,self.channel])
+        self.model_classifier_percept = ModelAllConvolutional1('model2', 6, 64, input_shape=[self.output_size,self.output_size,self.channel])
         #tanh o/p -1 to 1
         self.logits_x_true = self.model_classifier_logits.get_logits((self.x_true+1)*0.5)
         self.percept_x_true = self.model_classifier_percept.get_logits((self.x_true+1)*0.5)
@@ -696,31 +707,35 @@ class vaegan(object):
 
 
 
-
         init = tf.global_variables_initializer()
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
 
+            #This one I comemnt
             #changed restoring of weights. 
-            ckpt = tf.train.get_checkpoint_state('WBC-Classification-UDA/checkpoint')
-            ckpt_path = ckpt.model_checkpoint_path
+            #ckpt = tf.train.get_checkpoint_state('WBC-Classification-UDA/checkpoint')
+            #ckpt_path = ckpt.model_checkpoint_path
             sess.run(init)
-            self.saver.restore(sess , self.saved_model_path)
+            #self.saver.restore(sess , self.saved_model_path)
             #print(tf.trainable_variables(),'tf.trainable_variables()')
             #saver = tf.train.Saver([var for var in tf.trainable_variables() if var.name.startswith('model1')])
             #print(ckpt_path)
             #saver.restore(sess, ckpt_path)
             
             ##self.saver.save(sess , self.saved_model_path)
-
-            print('Creating a Replica of s1 onto s2')
-            s1_vars1 = [var.name for var in tf.trainable_variables() if 'model1' in var.name]
-            s2_vars1 = [var for var in tf.trainable_variables() if 'model2' in var.name]
-            dictionary = {}
-            for i in range(len(s2_vars1)):
-                dictionary[s1_vars1[i][0:-2]] = s2_vars1[i]
-            saver_new = tf.train.Saver(var_list=dictionary)
+            
+            #This one I comment
+            # print('Creating a Replica of s1 onto s2')
+            # s1_vars1 = [var.name for var in tf.trainable_variables() if 'model1' in var.name]
+            # s2_vars1 = [var for var in tf.trainable_variables() if 'model2' in var.name]
+            # dictionary = {}
+            # for i in range(len(s2_vars1)):
+            #     dictionary[s1_vars1[i][0:-2]] = s2_vars1[i]
+            # saver_new = tf.train.Saver(var_list=dictionary)
+            
+            
+            
             #saver_new.restore(sess, ckpt_path)
 
 
@@ -739,9 +754,14 @@ class vaegan(object):
             g_acc=87.0
             batchNum = 0
             step=0
+
             while step <= 100000:
                 next_x_images = self.X_Real_Train[batchNum*self.batch_size:(batchNum+1)*self.batch_size]
                 next_y_images = self.Y_train[batchNum*self.batch_size:(batchNum+1)*self.batch_size]
+                
+                if next_x_images.shape[0] != 64 or next_y_images.shape[0] != 64:
+                    continue
+                
                 batchNum = batchNum +1
                 #print(batchNum*self.batch_size)
                 if(((batchNum+1)%170)==0):
@@ -782,11 +802,11 @@ class vaegan(object):
                     print('G1_loss_CL: ', cl, 1*cl)
                     print('G1_loss_Total: ', g1)
 
-                    Preddiction = np.zeros([self.TestDataSize_cam3,11])
+                    Preddiction = np.zeros([self.TestDataSize_cam3,6])
                     for i in range(np.int(self.TestDataSize_cam3/self.batch_size)):
                         next_x_images = self.X_Real_Test_cam3[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
                     x_filt = sess.run(self.x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                     x_filt_percept = sess.run(self.percept_x_out, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                     print('shape:', x_filt_percept.shape)
@@ -803,45 +823,45 @@ class vaegan(object):
                         self.saver.save(sess , 'WBC-Classification-UDA/models/model.cpkt', global_step=step)
                         g_acc= l_acc
 
-                    Preddiction = np.zeros([self.TrainDataSize,11])
+                    Preddiction = np.zeros([self.TrainDataSize,6])
                     for i in range(np.int(self.TrainDataSize/self.batch_size)):
                         next_x_images = self.X_Real_Train[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
                     print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction, self.Y_train))
                     if (step == 100):
                         np.save('Data/x_cam3_train.npy',next_x_images)
 
-                    Preddiction = np.zeros([self.TestDataSize,11])
+                    Preddiction = np.zeros([self.TestDataSize,6])
                     for i in range(np.int(self.TestDataSize/self.batch_size)):
                         next_x_images = self.X_Real_Test[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
 
                     print('Full  Filtered Real Cam2 Example  Acc = ',getAcc(Preddiction, self.Y_test))
                     if (step == 100):
                         np.save('Data/x_cam2.npy',next_x_images)
 
-                    Preddiction = np.zeros([self.TestDataSize,11])
+                    Preddiction = np.zeros([self.TestDataSize,6])
                     for i in range(np.int(self.TestDataSize/self.batch_size)):
                         next_x_images = self.X_Real_Test[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_true, feed_dict={self.x_true: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
                     print('Full Real Cam2 Example  Acc = ',getAcc(Preddiction, self.Y_test))
 
-                    Preddiction = np.zeros([self.TestDataSize_cam3,11])
+                    Preddiction = np.zeros([self.TestDataSize_cam3,6])
                     for i in range(np.int(self.TestDataSize_cam3/self.batch_size)):
                         next_x_images = self.X_Real_Test_cam3[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_true, feed_dict={self.x_true: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
                         
                     print('Full  Real Test  Example  Acc = ',getAcc(Preddiction, self.Y_test_cam3))
                     
-                    Preddiction = np.zeros([self.TrainDataSize,11])
+                    Preddiction = np.zeros([self.TrainDataSize,6])
                     for i in range(np.int(self.TrainDataSize/self.batch_size)):
                         next_x_images = self.X_Real_Train[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_true, feed_dict={self.x_true: next_x_images, self.keep_prob:1})
-                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,11])
+                        Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,6])
                         
                     print('Full  Real Train Example  Acc = ',getAcc(Preddiction, self.Y_train))
                     
@@ -926,6 +946,7 @@ flags.DEFINE_integer("op", 0, "Training or Test")
 
 FLAGS = flags.FLAGS
 FLAGS.op = 0
+
 if (1):
     path123 = './'
     root_log_dir = path123 + "WBC-Classification-UDA/log"
@@ -948,5 +969,3 @@ if (1):
 
     vaeGan.build_model_vaegan()
     vaeGan.train()
-
-
