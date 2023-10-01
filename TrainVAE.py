@@ -4,11 +4,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import os
 import keras
+import PIL
 from keras import backend as K
-from keras.layers import Dense, Activation, Dropout, Flatten, Conv2D
 from keras.preprocessing import image
 from keras.applications.vgg19 import preprocess_input
-from keras.models import Model, Sequential
 import numpy as np
 import matplotlib
 import pandas as pd
@@ -26,7 +25,6 @@ from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_tf import model_eval
 from cleverhans.utils_tf import model_argmax
 import functools
-import tensorflow as tf
 from cleverhans import initializers
 from cleverhans.model import Model
 #from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
@@ -40,36 +38,17 @@ from cleverhans.augmentation import random_horizontal_flip, random_shift
 from cleverhans.dataset import CIFAR10
 from cleverhans.model_zoo.all_convolutional import ModelAllConvolutional
 from keras.models import load_model
-
 from pdb import set_trace as trace
-
 from shutil import copyfile
 import imageio
 from PIL import Image
-import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import batch_norm
-
 import os, csv, keras, math, logging, functools, cv2, sys
 #from keras.applications.vgg19 import VGG19, preprocess_input
-from keras.preprocessing import image
 from keras.models import Model, Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, Conv2D, GlobalAveragePooling2D, ZeroPadding2D, Convolution2D, MaxPooling2D
-import numpy as np
-import pandas as pd
-from keras.utils import to_categorical
 #from sklearn.preprocessing import OneHotEncoder
-import tensorflow as tf
-from keras.callbacks import ModelCheckpoint
-from cleverhans.attacks import FastGradientMethod
-from cleverhans.loss import CrossEntropy
-from cleverhans.train import train
-from cleverhans.utils import AccuracyReport, set_log_level
-from cleverhans.utils_keras import cnn_model
-from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_tf import model_eval, model_argmax
-from cleverhans import initializers
-from cleverhans.model import Model
-from tensorflow.python.platform import flags
 #from cleverhans.model_zoo.all_convolutional import ModelAllConvolutional
 #from vgg import VGG16
 #from vgg19 import VGG19
@@ -78,7 +57,14 @@ from keras.datasets import cifar10
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+import errno
+import scipy
+import scipy.misc
 
+from cleverhans.serial import NoRefModel
+
+from keras.utils.np_utils import to_categorical 
+from tensorflow.python.framework.ops import convert_to_tensor
 
 classes = ['basophil', 'neutrophil', 'eosinophil', 'lymphocyte', 'monocyte', 'mixed']
 num_classes = len(classes)
@@ -198,12 +184,7 @@ def instance_norm(x):
 #         resi = x + deconv2
 
 #         return resi
-import os
-import errno
-import numpy as np
-import scipy
-import scipy.misc
-from keras.models import Model
+
 
 
 def mkdir_p(path):
@@ -272,19 +253,6 @@ def merge(images, size):
 
 
 
-import tensorflow as tf
-
-from cleverhans import initializers
-from cleverhans.serial import NoRefModel
-
-
-
-from keras.utils.np_utils import to_categorical 
-import PIL
-import numpy as np
-import scipy
-from tensorflow.python.framework.ops import convert_to_tensor
-import os
 TINY = 1e-8
 d_scale_factor = 0.25
 g_scale_factor =  1 - 0.75/2
