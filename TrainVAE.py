@@ -55,6 +55,8 @@ from cleverhans.utils_tf import model_eval, model_argmax
 from keras.datasets import cifar10
 #from sklearn.utils import class_weight
 import ssl
+import csv
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import errno
@@ -146,7 +148,6 @@ def fully_connect(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, 
     if with_w:
       return tf.matmul(input_, matrix) + bias, matrix, bias
     else:
-
       return tf.matmul(input_, matrix) + bias
 
 def conv_cond_concat(x, y):
@@ -252,11 +253,9 @@ def merge(images, size):
 #     return ((image + 1) * 127.5).astype(np.uint8)
 
 
-
 TINY = 1e-8
 d_scale_factor = 0.25
 g_scale_factor =  1 - 0.75/2
-import csv
 
 def getAcc(pred, next_y_images):
     global num_classes
@@ -268,6 +267,7 @@ def getAcc(pred, next_y_images):
             acc[np.argmax(next_y_images[i])] = acc[np.argmax(next_y_images[i])] + 1
     print(100*np.sum(acc)/(np.sum(Tc)-num_classes))
     return 100*acc/Tc,100*np.sum(acc)/(np.sum(Tc)-num_classes)
+
 class ModelAllConvolutional(NoRefModel):
   """
   A simple model that uses only convolution and downsampling---no batch norm or other techniques that can complicate
@@ -355,8 +355,6 @@ class ModelAllConvolutional1(NoRefModel):
       return {self.O_LOGITS: conv,
               self.O_PROBS: tf.nn.softmax(logits=logits)}
 
-
-
 class vaegan(object):
 
     #build model
@@ -380,10 +378,7 @@ class vaegan(object):
         self.x_input = tf.placeholder(tf.float32, [self.batch_size, self.output_size, self.output_size, 3])
         self.x_true = tf.placeholder(tf.float32, [self.batch_size, self.output_size, self.output_size, self.channel])
 
-
-
         self.labels = tf.placeholder(tf.float32, [self.batch_size, num_classes])
-
 
         self.ep1 = tf.random_normal(shape=[self.batch_size, self.latent_dim])
         self.zp1 = tf.random_normal(shape=[self.batch_size, self.latent_dim])
@@ -397,6 +392,7 @@ class vaegan(object):
         y_train=[]
         x_train1=[]
         main_directory = 'WBC-Classification-UDA/Main Dataset/'
+
         for dirs in os.listdir(main_directory):
             if (dirs == '.ipynb_checkpoints'):
               continue
@@ -417,15 +413,16 @@ class vaegan(object):
         l=list(range(0,len(y_train)))
         l=np.asarray(l)
         np.random.shuffle(l)
+
         for i in l:
             cam3_train_data.append(x_train1[i])
             cam3_train_label.append(y_train[i])
                
-        x_train1=cam3_train_data
-        y_train=cam3_train_label
+        x_train1 = cam3_train_data
+        y_train = cam3_train_label
         
         x_train1 = np.asarray(x_train1)/127.5
-        x_train1 =x_train1 - 1.
+        x_train1 = x_train1 - 1.
         y_train = np.asarray(y_train)
         #y_train = toOneHot(y_train)
         y_train= to_categorical(y_train, num_classes=num_classes)
@@ -473,11 +470,11 @@ class vaegan(object):
         x_test1_cam3 = cam3_test_data
         y_test_cam3 = cam3_test_label
          
-        y_test_cam3= to_categorical(y_test_cam3, num_classes=num_classes) 
+        y_test_cam3 = to_categorical(y_test_cam3, num_classes=num_classes) 
         #y_test_cam3 = toOneHot(np.asarray(y_test_cam3))
         #x_test1_cam3=np.asarray(x_test1_cam3)/255.0
         x_test1_cam3 = np.asarray(x_test1_cam3)/127.5
-        x_test1_cam3 =x_test1_cam3 - 1.
+        x_test1_cam3 = x_test1_cam3 - 1.
         
         x_test1=[]
         y_test =[]
@@ -502,6 +499,7 @@ class vaegan(object):
         l=list(range(0,len(y_test)))
         l=np.asarray(l)
         np.random.shuffle(l)
+
         for i in l:
             cam2_data.append(x_test1[i])
             cam2_label.append(y_test[i])
@@ -572,10 +570,6 @@ class vaegan(object):
 
         print('Data Loading Completed')
 
-
-
-
-
     def build_model_vaegan(self):
 
         self.z1_mean, self.z1_sigm = self.Encode1(self.x_input)
@@ -643,10 +637,6 @@ class vaegan(object):
             tf.summary.scalar(k, v)
 
         print('Model is Built')
-
-
-
-
 
     #do train
     def train(self):
@@ -718,20 +708,25 @@ class vaegan(object):
             print('******************')
 
             step = 0
-            g_acc=87.0
+            g_acc = 87.0
             batchNum = 0
             step=0
 
+            total_batches = len(self.Y_train) // self.batch_size
+            
+            if len(self.Y_train) % self.batch_size != 0:
+                total_batches += 1
+
             while step <= 100000:
-                next_x_images = self.X_Real_Train[batchNum*self.batch_size:(batchNum+1)*self.batch_size]
-                next_y_images = self.Y_train[batchNum*self.batch_size:(batchNum+1)*self.batch_size]
+                next_x_images = self.X_Real_Train[batchNum*self.batch_size:min((batchNum+1)*self.batch_size, len(self.X_Real_Train))]
+                next_y_images = self.Y_train[batchNum*self.batch_size:min((batchNum+1)*self.batch_size, len(self.Y_train))]
                 
-                if next_x_images.shape[0] != 64 or next_y_images.shape[0] != 64:
+                if next_x_images.shape[0] == 0 or next_y_images.shape[0] == 0:
                     continue
                 
-                batchNum = batchNum +1
+                batchNum = batchNum + 1
                 #print(batchNum*self.batch_size)
-                if(((batchNum+1)%170)==0):
+                if(((batchNum+1)%total_batches)==0):
                     idx = np.random.permutation(len(self.X_Real_Train))
                     self.X_Real_Train,self.Y_train = self.X_Real_Train[idx], self.Y_train[idx]
                     batchNum = 0
@@ -744,13 +739,10 @@ class vaegan(object):
                 sess.run(opti_E1, feed_dict=fd)
                 sess.run(opti_G1, feed_dict=fd)
 
-
-
                 new_learn_rate = sess.run(new_learning_rate)
 
                 if new_learn_rate > 0.00005:
                     sess.run(add_global)
-
                 
                 if np.mod(step , 100) == 0 and step != 0:
 #                     for iter in range(200):
@@ -770,10 +762,12 @@ class vaegan(object):
                     print('G1_loss_Total: ', g1)
 
                     Preddiction = np.zeros([self.TestDataSize_cam3,num_classes])
+                    
                     for i in range(np.int(self.TestDataSize_cam3/self.batch_size)):
                         next_x_images = self.X_Real_Test_cam3[i*self.batch_size:(i+1)*self.batch_size]
                         pred = sess.run(self.pred_x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                         Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,num_classes])
+                    
                     x_filt = sess.run(self.x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                     x_filt_percept = sess.run(self.percept_x_out, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                     print('shape:', x_filt_percept.shape)
@@ -781,11 +775,13 @@ class vaegan(object):
                         np.save('Data/x_cam3_test.npy',next_x_images)
                     name = 'Data/x_filt__' + str(step) + '_.npy' 
                     np.save(name,x_filt)
-#                     print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction[0:150*64], self.Y_test_cam3[0:150*64]))
-#                     print('Full  Filtered Real Test  Example  Acc = ',getAcc(Preddiction[150*64:], self.Y_test_cam3[150*64:]))
-                    accs,l_acc = getAcc(Preddiction, self.Y_test_cam3)
-                    print('Full  Filtered Real Test  Example  Acc = ',accs,l_acc)
-                    if(l_acc>g_acc):
+#                   print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction[0:150*64], self.Y_test_cam3[0:150*64]))
+#                   print('Full  Filtered Real Test  Example  Acc = ',getAcc(Preddiction[150*64:], self.Y_test_cam3[150*64:]))
+                    
+                    accs, l_acc = getAcc(Preddiction, self.Y_test_cam3)
+                    print('Full  Filtered Real Test  Example  Acc = ',accs, l_acc)
+                    
+                    if(l_acc > g_acc):
                         print('model saved: ', 'WBC-Classification-UDA/models/model.ckpt')
                         self.saver.save(sess , 'WBC-Classification-UDA/models/model.cpkt', global_step=step)
                         g_acc= l_acc
@@ -796,6 +792,7 @@ class vaegan(object):
                         pred = sess.run(self.pred_x_filt2, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                         Preddiction[i*self.batch_size:(i+1)*self.batch_size] = pred.reshape([64,num_classes])
                     print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction, self.Y_train))
+                    
                     if (step == 100):
                         np.save('Data/x_cam3_train.npy',next_x_images)
 
@@ -832,8 +829,8 @@ class vaegan(object):
                         
                     print('Full  Real Train Example  Acc = ',getAcc(Preddiction, self.Y_train))
                     
-#                     print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction[0:150*64], self.Y_test_cam3[0:150*64]))
-#                     print('Full  Filtered Real Test  Example  Acc = ',getAcc(Preddiction[150*64:], self.Y_test_cam3[150*64:]))
+                    #print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction[0:150*64], self.Y_test_cam3[0:150*64]))
+                    #print('Full  Filtered Real Test  Example  Acc = ',getAcc(Preddiction[150*64:], self.Y_test_cam3[150*64:]))
 
 
                 step += 1
