@@ -43,7 +43,7 @@ from shutil import copyfile
 import imageio
 from PIL import Image
 from tensorflow.contrib.layers.python.layers import batch_norm
-import os, csv, keras, math, logging, functools, cv2, sys
+import csv, keras, math, logging, functools, cv2, sys
 #from keras.applications.vgg19 import VGG19, preprocess_input
 from keras.models import Model, Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, Conv2D, GlobalAveragePooling2D, ZeroPadding2D, Convolution2D, MaxPooling2D
@@ -55,7 +55,6 @@ from cleverhans.utils_tf import model_eval, model_argmax
 from keras.datasets import cifar10
 #from sklearn.utils import class_weight
 import ssl
-import csv
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -86,7 +85,6 @@ def del_all_flags(FLAGS):
         keys_list = [keys for keys in flags_dict]
         for keys in keys_list:
                 FLAGS.__delattr__(keys)
-
 
 
 def lrelu(x , alpha = 0.2 , name="LeakyReLU"):
@@ -710,7 +708,7 @@ class vaegan(object):
             step = 0
             g_acc = 87.0
             batchNum = 0
-            step=0
+            step = 0
 
             total_batches = len(self.Y_train) // self.batch_size
             
@@ -877,14 +875,12 @@ class vaegan(object):
             z_sigma = fully_connect(fc1, output_size=self.latent_dim, scope='VAE_e1_f3')
             return z_mean, z_sigma
 
-
     def KL_loss(self, mu, log_var):
         return -0.5 * tf.reduce_sum(1 + log_var - tf.pow(mu, 2) - tf.exp(log_var))
 
     def sample_z(self, mu, log_var):
         eps = tf.random_normal(shape=tf.shape(mu))
         return mu + tf.exp(log_var / 2) * eps
-
 
     def NLLNormal(self, pred, target):
 
