@@ -706,7 +706,7 @@ class vaegan(object):
             print('******************')
 
             step = 0
-            g_acc = 87.0
+            g_acc = 70.0
             batchNum = 0
             step = 0
 
@@ -742,7 +742,7 @@ class vaegan(object):
                 if new_learn_rate > 0.00005:
                     sess.run(add_global)
                 
-                if np.mod(step , 100) == 0 and step != 0:
+                if np.mod(step , 2) == 0 and step != 0:
 #                     for iter in range(200):
 #                         print('step', step)
                     #print('model saved: ', self.saved_model_path)
@@ -770,8 +770,8 @@ class vaegan(object):
                     x_filt_percept = sess.run(self.percept_x_out, feed_dict={self.x_input: next_x_images, self.keep_prob:1})
                     print('shape:', x_filt_percept.shape)
                     if (step == 100):
-                        np.save('Data/x_cam3_test.npy',next_x_images)
-                    name = 'Data/x_filt__' + str(step) + '_.npy' 
+                        np.save('WBC-Classification-UDA/Data/x_cam3_test.npy',next_x_images)
+                    name = 'WBC-Classification-UDAData/x_filt__' + str(step) + '_.npy' 
                     np.save(name,x_filt)
 #                   print('Full  Filtered Real Train  Example  Acc = ',getAcc(Preddiction[0:150*64], self.Y_test_cam3[0:150*64]))
 #                   print('Full  Filtered Real Test  Example  Acc = ',getAcc(Preddiction[150*64:], self.Y_test_cam3[150*64:]))
