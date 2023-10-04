@@ -912,7 +912,6 @@ if (1):
     vaegan_checkpoint_dir =  "WBC-Classification-UDA/checkpoint"
     sample_path =  path123 + "  sample"
 
-
     model_path = vaegan_checkpoint_dir
 
     batch_size = FLAGS.batch_size
